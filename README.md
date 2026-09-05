@@ -1,5 +1,9 @@
 # openSUSE KDE Setup
 
+[![openSUSE](https://img.shields.io/badge/openSUSE-Tumbleweed_%7C_Slowroll-73ba25?logo=opensuse&logoColor=white)](https://get.opensuse.org/)
+[![KDE Plasma](https://img.shields.io/badge/KDE-Plasma-1d99f3?logo=kde&logoColor=white)](https://kde.org/plasma-desktop/)
+[![license](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+
 **English** · [Português](README.pt-BR.md)
 
 Documentation and scripts that take a machine from an empty disk to a working
