@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="docs/assets/opensuse-logo.svg" alt="openSUSE" width="128">
-</p>
+<img src="docs/assets/opensuse-logo.svg" alt="openSUSE" width="128">
 
 # openSUSE KDE Setup
 
