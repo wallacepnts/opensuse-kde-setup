@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/opensuse-logo.svg" alt="openSUSE" width="128">
+</p>
+
 # openSUSE KDE Setup
 
 [![openSUSE](https://img.shields.io/badge/openSUSE-Tumbleweed_%7C_Slowroll-73ba25?logo=opensuse&logoColor=white)](https://get.opensuse.org/)

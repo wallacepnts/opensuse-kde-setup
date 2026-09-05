@@ -70,6 +70,13 @@ for path in docs:
         elif frag and frag not in anchors.get(resolved, set()):
             fail(path, f"anchor not found in {target}: #{frag}")
 
+    # ![alt](path) is already covered above; <img src=…> is HTML and is not.
+    for src in re.findall(r'<img[^>]+src="([^"]+)"', prose):
+        if src.startswith("http"):
+            continue
+        if not os.path.exists(os.path.normpath(os.path.join(base, src))):
+            fail(path, f"image missing: {src}")
+
     for ref in sorted(set(re.findall(r"scripts/[\w.-]+", prose))):
         if not os.path.exists(ref):
             fail(path, f"script referenced but absent: {ref}")
