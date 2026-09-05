@@ -17,7 +17,11 @@ jobs:
           done
 
       - name: ShellCheck
-        run: shellcheck scripts/install-*.sh scripts/convert-video
+        # The runner's version is not the one you have locally; print it so a
+        # failure that reproduces nowhere else is diagnosable from the log.
+        run: |
+          shellcheck --version
+          shellcheck scripts/install-*.sh scripts/convert-video
 
       - name: Executable bits
         # KDE ignores a service menu whose .desktop is not executable, and the

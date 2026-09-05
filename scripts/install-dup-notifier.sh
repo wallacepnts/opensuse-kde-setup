@@ -94,7 +94,10 @@ U=${SUDO_USER:-}
                      "(sem SUDO_USER — parte gráfica não instalada)"; exit 0; }
 
 H=$(getent passwd "$U" | cut -d: -f6) || H=""
-[ -n "$H" ] && [ -d "$H" ] || { say "ERROR: home of '$U' not found" "ERRO: home de '$U' não encontrada"; exit 1; }
+if [ -z "$H" ] || [ ! -d "$H" ]; then
+  say "ERROR: home of '$U' not found" "ERRO: home de '$U' não encontrada"
+  exit 1
+fi
 
 command -v notify-send >/dev/null || {
   say "installing libnotify-tools (provides notify-send)..." \

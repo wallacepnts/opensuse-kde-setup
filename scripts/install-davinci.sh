@@ -28,8 +28,10 @@ ver=f"{maj}.{mi}.{rel}"
 print(ver, ver if rel else f"{maj}.{mi}", d["downloadId"])') || {
   say "could not read the API response" "não foi possível ler a resposta da API"; exit 1; }
 read -r VER FILEVER DLID <<<"$parsed"
-[ -n "$VER" ] && [ -n "$FILEVER" ] && [ -n "$DLID" ] || {
-  say "unexpected API response" "resposta inesperada da API"; exit 1; }
+if [ -z "$VER" ] || [ -z "$FILEVER" ] || [ -z "$DLID" ]; then
+  say "unexpected API response" "resposta inesperada da API"
+  exit 1
+fi
 
 say "available version: $VER" "versão disponível: $VER"
 [ "${1:-}" = "--check" ] && exit 0
