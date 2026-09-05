@@ -1,0 +1,103 @@
+#!/bin/bash
+# Video conversions called from the Dolphin context menu.
+#   convert-video <dnxhr_lb|dnxhr_sq|dnxhr_hqx|h264|h265> <file>...
+set -u
+
+# Messages follow the session language; empty locale falls back to the system one.
+L="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
+[ -n "$L" ] || L=$(sed -n 's/^LC_MESSAGES=//p' /etc/locale.conf 2>/dev/null | tail -1 | tr -d '"')
+[ -n "$L" ] || L=$(sed -n 's/^LANG=//p' /etc/locale.conf 2>/dev/null | tail -1 | tr -d '"')
+case "$L" in pt*) PT=1;; *) PT=0;; esac
+say(){ if [ "$PT" = 1 ]; then printf '%s\n' "$2"; else printf '%s\n' "$1"; fi; }
+pick(){ if [ "$PT" = 1 ]; then printf '%s' "$2"; else printf '%s' "$1"; fi; }
+APP=$(pick "Convert video" "Converter vídeo")
+# Under 'konsole -e' the window closes with the script, so every exit waits.
+pause(){ echo; read -rp "$(pick 'Press Enter to close...' 'Pressione Enter para fechar...')" _; }
+die(){ say "$1" "$2"; pause; exit 1; }
+
+[ $# -gt 0 ] || die "missing profile" "perfil ausente"
+PERFIL=$1; shift
+[ $# -gt 0 ] || die "no files given" "nenhum arquivo"
+
+case "$PERFIL" in
+  dnxhr_lb)
+    # Cuts only: a third of SQ's size, -1.5% SSIM.
+    ARGS=(-c:v dnxhd -profile:v dnxhr_lb -pix_fmt yuv422p -c:a pcm_s16le -ar 48000)
+    EXT=mov; SUF=_lb ;;
+  dnxhr_hqx)
+    # 10-bit: same bitrate as HQ, more room for heavy grading.
+    ARGS=(-c:v dnxhd -profile:v dnxhr_hqx -pix_fmt yuv422p10le -c:a pcm_s16le -ar 48000)
+    EXT=mov; SUF=_hqx ;;
+  dnxhr_sq|dnxhr_hq)
+    # For editing: intra-frame, no temporal compression.
+    ARGS=(-c:v dnxhd -profile:v "$PERFIL" -pix_fmt yuv422p -c:a pcm_s16le -ar 48000)
+    EXT=mov; SUF="_${PERFIL##*_}" ;;
+  h264)
+    # For delivery: CQ 18 is visually lossless; p6 and high beat the NVENC
+    # defaults by +0.6% SSIM at the same size, at no cost in time.
+    ARGS=(-vf format=yuv420p -c:v h264_nvenc -preset p6 -cq 18 -profile:v high
+          -spatial-aq 1 -rc-lookahead 20 -bf 3
+          -c:a aac -b:a 192k -movflags +faststart)
+    EXT=mp4; SUF=_h264 ;;
+  h265)
+    # No -bf: Pascal has no B-frames in HEVC ("No capable devices found").
+    ARGS=(-vf format=yuv420p -c:v hevc_nvenc -preset p6 -cq 20
+          -spatial-aq 1 -rc-lookahead 20
+          -c:a aac -b:a 192k -movflags +faststart -tag:v hvc1)
+    EXT=mp4; SUF=_h265 ;;
+  *) die "unknown profile: $PERFIL" "perfil desconhecido: $PERFIL" ;;
+esac
+
+total=$#; n=0; falhas=0
+for f in "$@"; do
+  n=$((n+1))
+  base="${f%.*}"; saida="${base}${SUF}.${EXT}"
+  [ "$f" = "$saida" ] && { say "skipping $f (source = target)" "pulando $f (origem = destino)"; continue; }
+  # Two files with the same name and different extensions would collide here.
+  # Keep looking until the name is free: '-y' below would overwrite, and the
+  # failure path removes "$saida", which must never be a pre-existing file.
+  [ -e "$saida" ] && saida="${base}_${f##*.}${SUF}.${EXT}"
+  i=2; while [ -e "$saida" ]; do saida="${base}_${f##*.}${SUF}_${i}.${EXT}"; i=$((i+1)); done
+
+  echo "──────────────────────────────────────────────"
+  echo "[$n/$total] $(basename "$f")  →  $(basename "$saida")"
+  # DNxHR has a near-constant bitrate, so size follows from bits/pixel.
+  case "$PERFIL" in dnxhr_*)
+    info=$(ffprobe -v error -select_streams v:0 \
+             -show_entries stream=width,height,avg_frame_rate:format=duration \
+             -of default=nw=1:nk=1 "$f" 2>/dev/null | tr '\n' ' ')
+    # $info carries four space-separated fields; the split is what turns them
+    # into separate arguments, so it must not be quoted.
+    # shellcheck disable=SC2086
+    python3 - "$PT" "$PERFIL" $info <<'EOP' 2>/dev/null
+import sys
+bpp={'dnxhr_lb':0.73,'dnxhr_sq':2.34,'dnxhr_hq':3.54,'dnxhr_hqx':3.54}
+try:
+    pt = sys.argv[1] == '1'
+    perfil,w,h,fr,dur = sys.argv[2],int(sys.argv[3]),int(sys.argv[4]),sys.argv[5],float(sys.argv[6])
+    n,d = fr.split('/'); fps = float(n)/float(d)
+    gb = bpp[perfil]*w*h*fps*dur/8/2**30
+    lab = 'estimado' if pt else 'estimated'
+    print(f'  {w}x{h} @ {fps:.0f}fps, {dur/60:.1f} min  →  {lab} ~{gb:.1f} GB')
+except Exception: pass
+EOP
+  ;; esac
+
+  if ffmpeg -hide_banner -stats -loglevel warning -i "$f" "${ARGS[@]}" "$saida" -y; then
+    echo "  ok: $(du -h "$saida" | cut -f1)"
+  else
+    say "  FAILED" "  FALHOU"; falhas=$((falhas+1)); rm -f "$saida"
+  fi
+done
+
+echo "──────────────────────────────────────────────"
+if [ $falhas -eq 0 ]; then
+  msg=$(pick "$total file(s) converted" "$total arquivo(s) convertido(s)")
+  notify-send -a "$APP" -i video-x-generic "$(pick Done Concluído)" "$msg" 2>/dev/null
+  echo "$msg"
+else
+  msg=$(pick "$falhas of $total failed" "$falhas de $total falharam")
+  notify-send -a "$APP" -u critical "$(pick Error Erro)" "$msg" 2>/dev/null
+  echo "$msg"
+fi
+pause

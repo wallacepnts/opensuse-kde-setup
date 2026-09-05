@@ -1,0 +1,41 @@
+[Desktop Entry]
+Type=Application
+Name=Convert video
+Name[pt_BR]=Converter vídeo
+Icon=video-x-generic
+MimeType=video/*;
+Actions=dnxhrlb;dnxhrsq;dnxhrhqx;h264;h265;
+X-KDE-Submenu=Convert video
+X-KDE-Submenu[pt_BR]=Converter vídeo
+X-KDE-Priority=TopLevel
+NoDisplay=true
+
+[Desktop Action dnxhrlb]
+Name=To DaVinci — DNxHR LB (cuts only, ~19 GB/h)
+Name[pt_BR]=Para DaVinci — DNxHR LB (só corte, ~19 GB/h)
+Icon=video-x-generic
+Exec=konsole -e convert-video dnxhr_lb %F
+
+[Desktop Action dnxhrsq]
+Name=To DaVinci — DNxHR SQ (editing, ~61 GB/h)
+Name[pt_BR]=Para DaVinci — DNxHR SQ (edição, ~61 GB/h)
+Icon=video-x-generic
+Exec=konsole -e convert-video dnxhr_sq %F
+
+[Desktop Action dnxhrhqx]
+Name=To DaVinci — DNxHR HQX 10-bit (grading, ~92 GB/h)
+Name[pt_BR]=Para DaVinci — DNxHR HQX 10 bits (colorização, ~92 GB/h)
+Icon=video-x-generic
+Exec=konsole -e convert-video dnxhr_hqx %F
+
+[Desktop Action h264]
+Name=Export H.264 (NVENC)
+Name[pt_BR]=Exportar H.264 (NVENC)
+Icon=video-mp4
+Exec=konsole -e convert-video h264 %F
+
+[Desktop Action h265]
+Name=Export H.265 (NVENC)
+Name[pt_BR]=Exportar H.265 (NVENC)
+Icon=video-mp4
+Exec=konsole -e convert-video h265 %F

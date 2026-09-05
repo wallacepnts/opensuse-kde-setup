@@ -1,0 +1,7 @@
+# KDE grava isto por pasta ao definir ícone ou modo de exibição
+.directory
+
+# sobras de editor
+*~
+*.bak
+*.orig

@@ -1,0 +1,35 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse
+        run: |
+          for f in scripts/install-*.sh scripts/convert-video; do
+            bash -n "$f"
+          done
+
+      - name: ShellCheck
+        run: shellcheck scripts/install-*.sh scripts/convert-video
+
+      - name: Executable bits
+        # KDE ignores a service menu whose .desktop is not executable, and the
+        # guides tell the reader to copy these straight out of the repository.
+        run: |
+          for f in scripts/install-*.sh scripts/convert-video scripts/convert-video.desktop; do
+            test -x "$f" || { echo "$f lost its executable bit"; exit 1; }
+          done
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Links, anchors, parity and command syntax
+        run: python3 .github/check-docs.py
